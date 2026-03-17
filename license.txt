@@ -1,0 +1,11 @@
+Model Information:
+* title:	Baldi Angry
+* source:	https://sketchfab.com/3d-models/baldi-angry-220405d5ffff418fbb67410bc8e9c0d1
+* author:	Baldi_BaldimoreYT (https://sketchfab.com/Bendyiscool143)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Baldi Angry" (https://sketchfab.com/3d-models/baldi-angry-220405d5ffff418fbb67410bc8e9c0d1) by Baldi_BaldimoreYT (https://sketchfab.com/Bendyiscool143) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
