@@ -13,6 +13,7 @@ class Yellow{
     yellow.setAttribute("width", 3);
     yellow.setAttribute("src","#yellow");
     yellow.setAttribute("position",{x:x,y:1,z:z});
+    yellow.setAttribute("static-body","");
 
     let block = document.createElement("a-box");
     this.block = block;
@@ -22,10 +23,14 @@ class Yellow{
     block.setAttribute("repeat","0.8 0.3")
     block.setAttribute("src","#wall");
     block.setAttribute("position",{x:x,y:2.3,z:z});
+    block.setAttribute("static-body","");
     this.obj.append(block);
 
     // start out visible in the scene
     scene.append(this.obj);
+
+    window.DOOR_STATES = window.DOOR_STATES || {};
+    window.DOOR_STATES[`${this.x},${this.z}`] = true;
 
     // hide when clicked and schedule regeneration
     this.obj.addEventListener("click", () => {
@@ -38,10 +43,20 @@ class Yellow{
   }
 
   hide() {
-    if (this.yellow) this.yellow.setAttribute('visible', false);
+    if (this.yellow) {
+      this.yellow.setAttribute('visible', false);
+      this.yellow.removeAttribute('static-body');
+    }
+    window.DOOR_STATES = window.DOOR_STATES || {};
+    window.DOOR_STATES[`${this.x},${this.z}`] = false;
   }
 
   regenerate() {
-    if (this.yellow) this.yellow.setAttribute('visible', true);
+    if (this.yellow) {
+      this.yellow.setAttribute('visible', true);
+      this.yellow.setAttribute('static-body', '');
+    }
+    window.DOOR_STATES = window.DOOR_STATES || {};
+    window.DOOR_STATES[`${this.x},${this.z}`] = true;
   }
 }

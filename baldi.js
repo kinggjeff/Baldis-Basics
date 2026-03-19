@@ -34,6 +34,15 @@ class Baldi {
     baldiModel.setAttribute("animation-mixer", "");
     this.obj.append(baldiModel);
 
+    const baldiLight = document.createElement("a-light");
+    baldiLight.setAttribute("type", "point");
+    baldiLight.setAttribute("color", "#ff0000");
+    baldiLight.setAttribute("intensity", 1);
+    baldiLight.setAttribute("distance", 5);
+    baldiLight.setAttribute("decay", 2);
+    baldiLight.setAttribute("position", {x: 0, y: 1, z: 0});
+    this.obj.append(baldiLight);
+
     scene.append(this.obj);
 
     // initialize position (y=1 to match other NPCs)
@@ -80,7 +89,7 @@ class Baldi {
   }
 
   isWalkableMazeChar(ch) {
-    const blocked = new Set(["w", "h", "y", "k", "c", "z", "p", "v", "m", "o"]);
+    const blocked = new Set(["w", "h", "y", "k", "c", "z", "p", "v", "m", "o", window.LOCKER_TILE || "r"]);
     return !blocked.has(ch);
   }
 
@@ -264,57 +273,39 @@ class Baldi {
       return;
     }
 
-    // Transition from idle to roam when first notebook is collected
+    // Transition from idle to straight movement when first notebook is collected
     if (this.state === "idle") {
-      this.state = "roam";
+      this.state = "straight";
+
+      // Snap initial movement to a hallway-aligned cardinal direction.
+      const cardinals = [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2];
+      let bestHeading = cardinals[0];
+      let bestDiff = Infinity;
+      for (const h of cardinals) {
+        const diff = Math.abs(Math.atan2(Math.sin(this.heading - h), Math.cos(this.heading - h)));
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          bestHeading = h;
+        }
+      }
+      this.heading = bestHeading;
     }
 
     const pos = this.obj.object3D.position;
-    if (!player || !player.obj || !player.obj.object3D) return;
-    const playerPos = player.obj.object3D.position;
+    this.centerInHallway();
 
-    const seesPlayer = this.canSeePlayer(playerPos);
+    // Move straight through hallways; when blocked, pick a random left/right turn.
+    if (!this.canMoveStep(this.heading)) {
+      const left = this.normalizeHeading(this.heading + Math.PI / 2);
+      const right = this.normalizeHeading(this.heading + (3 * Math.PI) / 2);
 
-    if (this.doorDecisionCooldown > 0) this.doorDecisionCooldown--;
+      const options = [left, right].filter(h => this.canMoveStep(h));
+      if (!options.length) return;
 
-    if (!seesPlayer) {
-      if (this.state === "room-loop") {
-        this.updateRoomLoop();
-        return;
-      }
-      this.updateRoaming();
-      return;
+      this.heading = options[Math.floor(Math.random() * options.length)];
     }
 
-    this.state = "chase";
-
-    const dx = playerPos.x - pos.x;
-    const dz = playerPos.z - pos.z;
-    const distSq = (dx * dx) + (dz * dz);
-    if (distSq < 0.04) return;
-
-    // Chase on cardinal axes so movement fits hallway/grid constraints.
-    const chaseHeadings = [];
-    if (Math.abs(dx) >= Math.abs(dz)) {
-      chaseHeadings.push(dx >= 0 ? Math.PI / 2 : (3 * Math.PI) / 2);
-      chaseHeadings.push(dz >= 0 ? 0 : Math.PI);
-    } else {
-      chaseHeadings.push(dz >= 0 ? 0 : Math.PI);
-      chaseHeadings.push(dx >= 0 ? Math.PI / 2 : (3 * Math.PI) / 2);
-    }
-
-    let nextHeading = null;
-    for (const h of chaseHeadings) {
-      if (this.canMoveStep(h)) {
-        nextHeading = h;
-        break;
-      }
-    }
-
-    // No clear step this frame.
-    if (nextHeading === null) return;
-
-    this.heading = nextHeading;
+    if (!this.canMoveStep(this.heading)) return;
 
     pos.x += Math.sin(this.heading) * this.speed;
     pos.z += Math.cos(this.heading) * this.speed;
@@ -337,10 +328,7 @@ class Baldi {
 
     this.moveTowardCell(nextCell);
 
-    if (this.doorDecisionCooldown === 0 && this.tryStartRoomLoop()) {
-      this.roamPath = [];
-      this.roamPathIndex = 0;
-    }
+    // Keep Baldi in hallways only: room-loop behavior is disabled.
   }
 
   tryStartRoomLoop() {

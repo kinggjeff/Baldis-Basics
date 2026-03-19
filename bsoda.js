@@ -16,6 +16,12 @@ class Bsoda {
     this.obj.object3D.position.set(x, 0, z);
     scene.append(this.obj);
 
+    this.obj.addEventListener("click", () => {
+      if (typeof window.tryOpenVendingShop === "function") {
+        window.tryOpenVendingShop();
+      }
+    });
+
     // register bsoda so it blocks movement and for AI visibility
     window.WALLS = window.WALLS || [];
     window.WALLS.push(this);

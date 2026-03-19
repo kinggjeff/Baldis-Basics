@@ -13,7 +13,7 @@ class Coin {
     coin.setAttribute("animation", {
       property: "rotation",
       to: "0 360 0",
-      dur: 6000,
+      dur: 60000000,
       easing: "linear",
       loop: true
     })

@@ -40,12 +40,18 @@ class Zdesk {
     });
 
     let notebook = document.createElement("a-gltf-model")
+    this.notebookCollected = false;
     notebook.setAttribute("src", "#notebook")
     notebook.setAttribute("position",{x:x,y:1.2,z:z})
     this.obj.addEventListener("click",()=>{
+    if (this.notebookCollected) return;
+    this.notebookCollected = true;
     notebook.remove();
-    notebooks++;          
+    notebooks++;
     counter();
+    if (typeof window.triggerYouWin === "function" && notebooks >= totalNotebooks) {
+      window.triggerYouWin();
+    }
     })
     this.obj.append(notebook)
 

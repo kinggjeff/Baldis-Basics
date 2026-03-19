@@ -16,6 +16,7 @@
     <script src="desk.js"></script>
     <script src="zdesk.js"></script>
     <script src="plant.js"></script>
+    <script src="locker.js"></script>
     <script src="lunch.js"></script>
     <script src="bsoda.js"></script> 
     <script src="trash.js"></script>
@@ -24,7 +25,438 @@
 
   </head>
   <body>
-    <a-scene physics="debug: false">
+    <style>
+      :root {
+        --baldi-x-cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%23c90000' stroke='%235f0000' stroke-width='2'/%3E%3Cpath d='M10 10 L22 22 M22 10 L10 22' stroke='%23ffffff' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") 16 16;
+      }
+
+      #start_screen {
+        position: absolute;
+        inset: 0;
+        z-index: 3000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(circle at 30% 10%, #ffffff 0%, #d5d5d5 55%, #b8b8b8 100%);
+        perspective: 1200px;
+      }
+
+      #start_stage {
+        width: min(96vw, 980px);
+        aspect-ratio: 4 / 3;
+        min-height: 440px;
+        position: relative;
+        overflow: hidden;
+        background: linear-gradient(145deg, #f1f1f1 0%, #d9d9d9 62%, #c8c8c8 100%);
+        border: 4px solid #111;
+        box-shadow: 0 24px 50px rgba(0, 0, 0, 0.42);
+        font-family: "Comic Sans MS", "Comic Neue", cursive;
+        transform: rotateX(3deg) rotateY(-2deg);
+        transform-style: preserve-3d;
+      }
+
+      #start_menu_scene {
+        width: 100%;
+        height: 100%;
+      }
+
+      #start_stage::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(120deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 38%);
+        pointer-events: none;
+      }
+
+      #title_logo {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        line-height: 0.9;
+      }
+
+      #title_logo_baldis {
+        display: inline-block;
+        color: #23b722;
+        font-size: clamp(58px, 8vw, 86px);
+        transform: rotate(-8deg);
+        text-shadow: 2px 2px 0 #0b6d0f;
+      }
+
+      #title_logo_basics {
+        display: inline-block;
+        margin-left: 10px;
+        color: #111;
+        font-family: "Times New Roman", serif;
+        font-size: clamp(64px, 9vw, 96px);
+        letter-spacing: 1px;
+      }
+
+      #title_logo_plus {
+        display: inline-block;
+        margin-left: 8px;
+        color: #c7be00;
+        font-size: clamp(72px, 10vw, 106px);
+        transform: rotate(8deg);
+        text-shadow: 2px 2px 0 #837900;
+      }
+
+      #menu_figure {
+        position: absolute;
+        left: 38px;
+        bottom: 28px;
+        width: 330px;
+        height: 320px;
+        transform: translateZ(24px) rotateY(8deg);
+        transform-style: preserve-3d;
+      }
+
+      #menu_figure_scene {
+        width: 100%;
+        height: 100%;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 18px 36px rgba(0, 0, 0, 0.38);
+        background: transparent;
+      }
+
+      .figure-head {
+        position: absolute;
+        top: 4px;
+        left: 62px;
+        width: 58px;
+        height: 58px;
+        border-radius: 50%;
+        border: 3px solid #111;
+        background: #f4d7bb;
+      }
+
+      .figure-body {
+        position: absolute;
+        top: 64px;
+        left: 52px;
+        width: 76px;
+        height: 134px;
+        border: 3px solid #111;
+        border-radius: 16px;
+        background: #28bf31;
+      }
+
+      .figure-arm {
+        position: absolute;
+        top: 86px;
+        left: 120px;
+        width: 62px;
+        height: 18px;
+        border: 3px solid #111;
+        border-radius: 12px;
+        transform: rotate(12deg);
+        background: #28bf31;
+      }
+
+      .figure-leg-left,
+      .figure-leg-right {
+        position: absolute;
+        top: 190px;
+        width: 20px;
+        height: 88px;
+        border: 3px solid #111;
+        border-radius: 12px;
+        background: #2c44d9;
+      }
+
+      .figure-leg-left {
+        left: 66px;
+      }
+
+      .figure-leg-right {
+        left: 96px;
+      }
+
+      #menu_board {
+        position: absolute;
+        right: 116px;
+        bottom: 68px;
+        width: min(52vw, 420px);
+        max-width: 420px;
+        padding: 18px 16px 20px;
+        border: 10px solid #b56f1e;
+        background: #080808;
+        transform: rotate(-8deg) rotateY(-15deg) translateZ(35px);
+        transform-style: preserve-3d;
+        box-shadow: 0 18px 30px rgba(0, 0, 0, 0.42);
+      }
+
+      #menu_board::before {
+        content: "";
+        position: absolute;
+        inset: -8px;
+        border: 3px solid rgba(80, 42, 8, 0.7);
+        transform: translateZ(-8px);
+        pointer-events: none;
+      }
+
+      .menu_button {
+        display: block;
+        width: 100%;
+        border: 0;
+        background: transparent;
+        text-align: center;
+        font-family: "Comic Sans MS", "Comic Neue", cursive;
+        font-weight: 700;
+        cursor: pointer;
+        text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45);
+      }
+
+      #play_button {
+        color: #17f6f0;
+        font-size: clamp(44px, 7vw, 62px);
+      }
+
+      #options_button {
+        color: #32e623;
+        font-size: clamp(42px, 6.8vw, 58px);
+      }
+
+      #about_button {
+        color: #d6c611;
+        font-size: clamp(42px, 6.8vw, 56px);
+      }
+
+      .menu_button:hover,
+      .menu_button:focus-visible {
+        transform: scale(1.03);
+        outline: none;
+      }
+
+      button,
+      .menu_button,
+      [role="button"] {
+        cursor: var(--baldi-x-cursor), pointer;
+      }
+
+      #menu_dialog {
+        position: absolute;
+        inset: 0;
+        display: none;
+        z-index: 12;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.62);
+      }
+
+      #start_menu_hotspots {
+        position: absolute;
+        inset: 0;
+        z-index: 8;
+        pointer-events: none;
+      }
+
+      .start_menu_hotspot {
+        position: absolute;
+        right: 132px;
+        width: min(46vw, 360px);
+        height: 64px;
+        border: 0;
+        background: transparent;
+        font-family: "Comic Sans MS", "Comic Neue", cursive;
+        font-size: clamp(40px, 6.3vw, 58px);
+        font-weight: 700;
+        text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+        pointer-events: auto;
+        text-align: center;
+        line-height: 1;
+      }
+
+      #play_button_fallback { color: #17f6f0; }
+      #options_button_fallback { color: #32e623; }
+      #about_button_fallback { color: #d6c611; }
+
+      #play_button_fallback {
+        top: 277px;
+      }
+
+      #options_button_fallback {
+        top: 349px;
+      }
+
+      #about_button_fallback {
+        top: 435px;
+      }
+
+      #menu_dialog_card {
+        width: min(90vw, 520px);
+        border: 4px solid #111;
+        border-radius: 12px;
+        background: #f8f8f8;
+        box-shadow: 0 18px 36px rgba(0, 0, 0, 0.45);
+        padding: 16px;
+      }
+
+      #menu_dialog_title {
+        margin: 0 0 8px;
+        font-family: "Times New Roman", serif;
+        font-size: 40px;
+        color: #111;
+      }
+
+      #menu_dialog_body {
+        margin: 0 0 14px;
+        color: #111;
+        font-size: 24px;
+        line-height: 1.25;
+      }
+
+      #menu_dialog_close {
+        width: 100%;
+        border: 3px solid #111;
+        border-radius: 8px;
+        padding: 10px;
+        background: #ffe36d;
+        color: #111;
+        font-size: 26px;
+        font-family: "Comic Sans MS", "Comic Neue", cursive;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      @media (max-width: 760px) {
+        #menu_figure {
+          left: -4px;
+          bottom: 10px;
+          transform: scale(0.72) rotateY(6deg);
+          transform-origin: left bottom;
+        }
+
+        #menu_board {
+          right: 12px;
+          width: min(62vw, 320px);
+          bottom: 52px;
+        }
+
+        .start_menu_hotspot {
+          right: 8px;
+          width: min(66vw, 320px);
+          height: 56px;
+          font-size: clamp(30px, 7vw, 44px);
+        }
+
+        #play_button_fallback { top: 284px; }
+        #options_button_fallback { top: 348px; }
+        #about_button_fallback { top: 412px; }
+      }
+
+      .a-canvas,
+      canvas {
+        cursor: var(--baldi-x-cursor), crosshair;
+      }
+
+      body.menu-hover-cursor {
+        cursor: var(--baldi-x-cursor), pointer;
+      }
+    </style>
+    <div id="start_screen">
+      <div id="start_stage">
+        <a-scene id="start_menu_scene" embedded vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" renderer="antialias: true; colorManagement: true; alpha: true" background="color: #000000">
+          <a-assets>
+            <a-asset-item id="start_baldi_model" src="./scene.gltf"></a-asset-item>
+          </a-assets>
+
+          <a-light type="ambient" intensity="0.38" color="#ffffff"></a-light>
+          <a-light type="point" intensity="0.72" color="#ffffff" position="2.5 5.5 1.5"></a-light>
+          <a-light type="point" intensity="0.32" color="#aaccff" position="-3 3 0"></a-light>
+
+          <a-entity id="start_menu_root" scale="1.5 1.5 1.5" position="-2 0 3.5">
+
+            <!-- TITLE -->
+            <a-text value="Baldi's" color="#1ce619" align="center" width="13.8"
+                    position="-1.78 3.52 -6.1" rotation="0 0 13"></a-text>
+            <a-text value="BASICS" font="exo2bold" color="#f2f2f2" align="center" width="17"
+                    position="1.42 3.48 -6.1"></a-text>
+            <!-- 3D gold plus sign -->
+            <a-entity position="4.22 3.82 -6.1">
+              <a-box width="1.38" height="0.44" depth="0.3" color="#c9a400" material="roughness: 0.3; metalness: 0.5"></a-box>
+              <a-box width="0.44" height="1.38" depth="0.3" color="#c9a400" material="roughness: 0.3; metalness: 0.5"></a-box>
+              <a-box width="1.38" height="0.44" depth="0.1" position="0 0 0.12" color="#9a7a00"></a-box>
+              <a-box width="0.44" height="1.38" depth="0.1" position="0 0 0.12" color="#9a7a00"></a-box>
+            </a-entity>
+
+            <!-- BALDI overlapping left of board (board left edge ≈ x −0.35, board z −5.72) -->
+            <a-gltf-model src="#start_baldi_model" scale="0.186 0.186 0.186"
+                          position="-0.3 -0.38 -5.05" rotation="0 10 0" animation-mixer></a-gltf-model>
+
+            <!-- 3D A+ symbol to the right of Baldi -->
+            <a-entity position="0.72 1.05 -5.08">
+              <!-- extrusion shadow layers -->
+              <a-text value="A+" align="center" color="#7a0000" width="34.8" position="-0.18 -0.18 -0.54"></a-text>
+              <a-text value="A+" align="center" color="#a00000" width="34.8" position="-0.12 -0.12 -0.36"></a-text>
+              <a-text value="A+" align="center" color="#c40000" width="34.8" position="-0.06 -0.06 -0.18"></a-text>
+              <!-- front face -->
+              <a-text value="A+" align="center" color="#ff2222" width="34.8" position="0 0 0"></a-text>
+            </a-entity>
+
+            <!-- REALISTIC CHALKBOARD centered at (1.85, 1.88) -->
+            <!-- Wall shadow backing -->
+            <a-box position="1.85 0.88 -5.96" depth="0.04" width="5.2" height="3.9" color="#2a1000"></a-box>
+            <!-- Outer wooden frame -->
+            <a-box position="1.85 0.88 -5.86" depth="0.22" width="5.0" height="3.7" color="#bf6d1e"></a-box>
+            <!-- Inner bevel rim -->
+            <a-box position="1.85 0.88 -5.78" depth="0.14" width="4.6" height="3.3" color="#7a3e0c"></a-box>
+            <!-- Dark green chalkboard surface -->
+            <a-box position="1.85 0.88 -5.72" depth="0.08" width="4.4" height="3.1" color="#1c4820"></a-box>
+            <!-- Chalk tray at bottom -->
+            <a-box position="1.85 -0.58 -5.65" depth="0.18" width="4.62" height="0.18" color="#9c5210"></a-box>
+
+            <!-- BUTTONS flush on board surface (board face z ≈ −5.68, buttons at −5.63) -->
+            <a-plane id="play_button" class="menu_clickable"
+                     position="2.55 1.73 -5.63" width="2.7" height="0.78"
+                     material="opacity: 0.01; transparent: true"></a-plane>
+            <a-plane id="options_button" class="menu_clickable"
+                     position="2.52 0.9 -5.63" width="3.3" height="0.78"
+                     material="opacity: 0.01; transparent: true"></a-plane>
+            <a-plane id="about_button" class="menu_clickable"
+                     position="2.38 0.08 -5.63" width="2.75" height="0.78"
+                     material="opacity: 0.01; transparent: true"></a-plane>
+
+            <!-- INFO PANEL -->
+            <a-entity id="menu_info_panel" visible="false" position="1.85 0.9 -5.56">
+              <a-plane width="4.42" height="2.5" color="#1c4820" opacity="0.97"></a-plane>
+              <a-plane width="4.72" height="2.8" position="0 0 -0.02" color="#bf6d1e" material="side: double"></a-plane>
+              <a-text id="menu_info_text" value="" color="#f3f3f3" align="center" width="7.2" position="0 0.3 0.03"></a-text>
+              <a-plane id="menu_close_button" class="menu_clickable"
+                       position="0 -0.84 0.03" width="1.38" height="0.44" color="#f9e45b">
+                <a-text value="CLOSE" color="#111111" align="center" width="3.8" position="0 -0.02 0.02"></a-text>
+              </a-plane>
+            </a-entity>
+
+          </a-entity>
+
+          <a-entity camera look-controls="enabled: false" wasd-controls="enabled: false" position="0 1.62 1.75">
+            <a-cursor rayOrigin="mouse" fuse="false" material="color: #ffffff; shader: flat" raycaster="objects: .menu_clickable; far: 20"></a-cursor>
+          </a-entity>
+        </a-scene>
+
+        <div id="start_menu_hotspots" aria-hidden="false">
+          <button id="play_button_fallback" class="start_menu_hotspot" type="button" aria-label="Play">PLAY</button>
+          <button id="options_button_fallback" class="start_menu_hotspot" type="button" aria-label="Options">OPTIONS</button>
+          <button id="about_button_fallback" class="start_menu_hotspot" type="button" aria-label="About">ABOUT</button>
+        </div>
+
+        <div id="menu_dialog" role="dialog" aria-modal="true" aria-labelledby="menu_dialog_title" aria-describedby="menu_dialog_body">
+          <div id="menu_dialog_card">
+            <h2 id="menu_dialog_title">About This Game</h2>
+            <p id="menu_dialog_body">
+              Objective: collect notebooks while avoiding Baldi.<br><br>
+              Use WASD or arrow keys to move, and hold Shift to sprint while you have stamina.<br><br>
+              Pick up coins and spend them at vending machines for temporary boosts.<br><br>
+              Survive, explore the maze, and gather as many notebooks as you can before Baldi catches you.
+            </p>
+            <button id="menu_dialog_close" type="button">Back To Menu</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <a-scene id="game_scene" physics="debug: false">
     <a-assets>
       <img id="yellow" src="yellow.png"></img>
       <img id="wood" src="wood.jpg"></img>
@@ -41,15 +473,15 @@
       <a-asset-item id="gold-coin" src="bell_currencycoin_-_animal_crossing.glb" ></a-asset-item>
       
     </a-assets>
-    <a-light type="ambient" intensity="0.2" color="#ffffff"></a-light>
+    <a-light type="ambient" intensity="0.08" color="#ffffff"></a-light>
     <a-plane static-body position="0 2.5 -4" rotation="90 0 0" width="150" height="150" src="#ceiling" repeat="50 50" side="double"></a-plane>
       <a-plane static-body position="0 0 -4" rotation="-90 0 0" width="800" height="800" src="#floor" repeat="500 500"></a-plane>
 
-      <a-sky color="#ECECEC"></a-sky>
+      <a-sky color="#b7bcc4"></a-sky>
       <a-entity rotation="0 180 0">
-        <a-camera wasd-controls="enabled:false" >
+        <a-camera id="game_camera" wasd-controls="enabled:false" >
           <a-text value="books"></a-text>
-          <a-cursor></a-cursor>
+          <a-cursor raycaster="far: 3"></a-cursor>
         </a-camera>
       </a-entity>
       
@@ -63,5 +495,37 @@
     </div>
     <div id="coin_text" style="position:absolute; top:80px; left:20px; color:white; font-size:50px; z-index:1000;font-family:'Comic Sans MS', cursive;">
 </div>
+    <div id="vending_shop" style="display:none; position:absolute; inset:0; background-color:rgba(0,0,0,0.65); z-index:2000; align-items:center; justify-content:center;">
+      <div style="width:min(90vw, 460px); background:#f3f3f3; border:4px solid #111; border-radius:14px; padding:18px; box-shadow:0 14px 30px rgba(0,0,0,0.5); font-family:'Comic Sans MS', cursive;">
+        <h2 style="margin:0 0 10px 0; color:#111;">Vending Machine</h2>
+        <p id="vending_status" style="margin:0 0 14px 0; color:#111; font-size:20px;">Choose one item. Cost: 1 coin.</p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button id="buy_speed_boost" style="flex:1; min-width:180px; padding:10px; font-size:20px; border:2px solid #111; border-radius:8px; cursor:pointer; background:#8ddf7c;">Buy Speed Boost</button>
+          <button id="buy_slow_baldi" style="flex:1; min-width:180px; padding:10px; font-size:20px; border:2px solid #111; border-radius:8px; cursor:pointer; background:#f2be73;">Slow Baldi</button>
+        </div>
+        <button id="close_vending_shop" style="margin-top:12px; width:100%; padding:10px; font-size:18px; border:2px solid #111; border-radius:8px; cursor:pointer; background:#ffffff;">Close</button>
+      </div>
+    </div>
+    <div id="lose_screen" style="display:none; position:absolute; inset:0; z-index:4000; align-items:center; justify-content:center; background:radial-gradient(circle at 50% 20%, #5a0000 0%, #220000 60%, #080000 100%);">
+      <div style="width:min(92vw, 620px); border:4px solid #190000; border-radius:16px; background:#f9e4d8; padding:18px; box-shadow:0 22px 45px rgba(0,0,0,0.6); text-align:center; font-family:'Comic Sans MS', cursive;">
+        <h2 id="lose_game_over" style="margin:0 0 4px 0; font-size:56px; color:#590000; text-shadow: 2px 2px 0 rgba(0,0,0,0.3); letter-spacing:2px;">GAME OVER</h2>
+        <div style="margin:0 auto 12px auto; width:min(72vw, 340px); height:min(72vw, 340px); max-width:340px; max-height:340px; border-radius:50%; border:7px solid #111; overflow:hidden; box-shadow:0 10px 24px rgba(0,0,0,0.4); background:#100505;">
+          <a-scene embedded vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" renderer="antialias: true; colorManagement: true" style="width:100%; height:100%;">
+            <a-assets>
+              <a-asset-item id="lose_baldi_head" src="./baldi_head.glb"></a-asset-item>
+            </a-assets>
+            <a-light type="ambient" color="#ffffff" intensity="0.42"></a-light>
+            <a-light type="point" color="#ffffff" intensity="0.85" position="0 2 2"></a-light>
+            <a-light type="point" color="#ff8888" intensity="0.46" position="0 1 -1"></a-light>
+            <a-light type="directional" color="#ffffff" intensity="0.58" position="0 2.5 1.5"></a-light>
+            <a-entity id="lose_baldi_camera" camera wasd-controls="enabled: false" look-controls="enabled: false" position="0 1.62 1.9"></a-entity>
+            <a-gltf-model id="lose_baldi_model" src="#lose_baldi_head" scale="0.5 0.5 0.5" position="0 1.4 -0.1" rotation="0 180 0"></a-gltf-model>
+          </a-scene>
+        </div>
+        <p id="lose_details" style="margin:0 0 8px 0; color:#260000; font-size:24px;">Baldi got you.</p>
+        <p id="lose_try_again" style="margin:0 0 12px 0; color:#590000; font-size:28px; font-weight:bold; text-shadow: 1px 1px 0 rgba(0,0,0,0.2);">TRY AGAIN</p>
+        <button id="restart_button" style="width:100%; padding:12px; border:3px solid #111; border-radius:10px; background:#ff6767; color:#220000; font-size:30px; font-weight:bold; cursor:pointer;">Restart</button>
+      </div>
+    </div>
   </body>
 </html>

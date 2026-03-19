@@ -29,6 +29,9 @@ class Door{
     this.obj.append(block);
     scene.append(this.obj);
 
+    window.DOOR_STATES = window.DOOR_STATES || {};
+    window.DOOR_STATES[`${this.x},${this.z}`] = true;
+
     // register both the vertical door and the top block so AI sees them separately
     window.WALLS = window.WALLS || [];
     window.WALLS.push(this.door);
@@ -53,6 +56,9 @@ class Door{
       const idx = window.WALLS.indexOf(this.door);
       if (idx !== -1) window.WALLS.splice(idx, 1);
     }
+
+    window.DOOR_STATES = window.DOOR_STATES || {};
+    window.DOOR_STATES[`${this.x},${this.z}`] = false;
   }
 
   regenerate() {
@@ -64,6 +70,9 @@ class Door{
     if (!window.WALLS.includes(this.door)) {
       window.WALLS.push(this.door);
     }
+
+    window.DOOR_STATES = window.DOOR_STATES || {};
+    window.DOOR_STATES[`${this.x},${this.z}`] = true;
   }
 }
 

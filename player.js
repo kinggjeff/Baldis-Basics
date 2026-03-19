@@ -4,11 +4,11 @@ class Player{
     this.text = document.createElement("a-text");
     this.text.setAttribute("value","books");
     this.obj.append(this.text)
-    this.moveStrength = 3;
-    this.sprintMultiplier = 1.5;       // 1.5x speed when sprinting
-    this.stamina = 100;                // max stamina
-    this.maxStamina = 100;
-    this.staminaDrainRate = 1.5;       // stamina depleted per frame while sprinting
+    this.moveStrength = 2.2;
+    this.sprintMultiplier = 1.35;      // reduced sprint speed multiplier
+    this.stamina = 150;                // larger stamina pool
+    this.maxStamina = 150;
+    this.staminaDrainRate = 1;       // stamina depleted per frame while sprinting
     this.staminaRegenRate = 0.3;       // stamina regenerated per frame while not sprinting
     this.canSprintAgain = true;        // sprint disabled until stamina reaches 50%
     this.jumping = false;
@@ -48,16 +48,55 @@ class Player{
     this.obj.object3D.position.z = this.driver.object3D.position.z;
     this.updateStaminaBar();
   }
+
+  // Returns true if the tile at maze grid coords (col, row) is a solid obstacle.
+  isSolidTile(tile, col, row) {
+    if (tile === "w" || tile === "h" || tile === "l") return true;
+    if (tile === "d" || tile === "j" || tile === "y" || tile === "k") {
+      const key = `${col},${-row}`;
+      if (!window.DOOR_STATES) return true;
+      if (typeof window.DOOR_STATES[key] === "undefined") return true;
+      return window.DOOR_STATES[key] === true;
+    }
+    return false;
+  }
+
+  // Returns true if world position (wx, wz) overlaps a solid tile.
+  isBlockedAt(wx, wz) {
+    if (typeof maze === "undefined" || !Array.isArray(maze)) return false;
+    const r = 0.28;
+    const probes = [[0,0],[r,0],[-r,0],[0,r],[0,-r]];
+    for (const [sx, sz] of probes) {
+      const col = Math.round(wx + sx);
+      const row = Math.round(-(wz + sz));
+      if (row < 0 || row >= maze.length) return true;
+      const rowStr = maze[row] || "";
+      if (col < 0 || col >= rowStr.length) return true;
+      if (this.isSolidTile(rowStr[col], col, row)) return true;
+    }
+    return false;
+  }
+
   processImpulses(){
     try{
       const body = this.driver.body; // Get the physics body
       if (!body) return;
+
+      const hasDirectionalInput =
+        this.pressed["ArrowUp"] || this.pressed["w"] ||
+        this.pressed["ArrowDown"] || this.pressed["s"] ||
+        this.pressed["ArrowLeft"] || this.pressed["a"] ||
+        this.pressed["ArrowRight"] || this.pressed["d"];
+
+      const isStandingStill =
+        !hasDirectionalInput &&
+        (!body.velocity || (Math.abs(body.velocity.x) < 0.01 && Math.abs(body.velocity.z) < 0.01));
       
-      // Handle stamina: deplete if sprinting, regenerate otherwise
-      const isSprinting = this.pressed["Shift"] && this.canSprintAgain;
+      // Handle stamina: deplete only while sprinting and moving, regenerate only while standing still
+      const isSprinting = this.pressed["Shift"] && this.canSprintAgain && hasDirectionalInput;
       if (isSprinting) {
         this.stamina = Math.max(0, this.stamina - this.staminaDrainRate);
-      } else {
+      } else if (isStandingStill) {
         this.stamina = Math.min(this.maxStamina, this.stamina + this.staminaRegenRate);
       }
       
@@ -96,6 +135,15 @@ class Player{
         vz += Math.cos(theta) * currentMoveStrength;
       }
       
+      // Block movement per-axis so walls are solid and the player can still slide along them.
+      if (this.driver.object3D) {
+        const px = this.driver.object3D.position.x;
+        const pz = this.driver.object3D.position.z;
+        const look = 0.18;
+        if (vx !== 0 && this.isBlockedAt(px + Math.sign(vx) * look, pz)) vx = 0;
+        if (vz !== 0 && this.isBlockedAt(px, pz + Math.sign(vz) * look)) vz = 0;
+      }
+
       // Apply horizontal velocity (preserve vertical velocity for jumping and gravity)
       if (body.velocity) {
         body.velocity.x = vx;
